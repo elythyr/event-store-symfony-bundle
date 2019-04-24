@@ -19,6 +19,10 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
 
 final class Configuration implements ConfigurationInterface
 {
+    const PROOPH_EVENT_STORE_NODE = 'prooph_event_store';
+    const PROJECTIONS_NODE = 'projections';
+    const REPOSITORIES_NODE = 'repositories';
+
     /**
      * Normalizes XML config and defines config tree
      *
@@ -26,9 +30,8 @@ final class Configuration implements ConfigurationInterface
      */
     public function getConfigTreeBuilder()
     {
-        $treeBuilder = new TreeBuilder();
-        /** @var ArrayNodeDefinition $rootNode */
-        $rootNode = $treeBuilder->root('prooph_event_store');
+        $treeBuilder = new TreeBuilder(self::PROOPH_EVENT_STORE_NODE);
+        $rootNode = $this->getRootNode($treeBuilder, self::PROOPH_EVENT_STORE_NODE);
 
         $this->addEventStoreSection($rootNode);
         $this->addProjectionManagerSection($rootNode);
@@ -38,9 +41,8 @@ final class Configuration implements ConfigurationInterface
 
     public function addProjectionManagerSection(ArrayNodeDefinition $node): void
     {
-        $treeBuilder = new TreeBuilder();
-        /** @var ArrayNodeDefinition $projectionsNode */
-        $projectionsNode = $treeBuilder->root('projections');
+        $treeBuilder = new TreeBuilder(self::PROJECTIONS_NODE);
+        $projectionsNode = $this->getRootNode($treeBuilder, self::PROJECTIONS_NODE);
 
         $beginsWithAt = function ($v) {
             return \strpos($v, '@') === 0;
@@ -104,9 +106,8 @@ final class Configuration implements ConfigurationInterface
      */
     private function addEventStoreSection(ArrayNodeDefinition $node): void
     {
-        $treeBuilder = new TreeBuilder();
-        /** @var ArrayNodeDefinition $repositoriesNode */
-        $repositoriesNode = $treeBuilder->root('repositories');
+        $treeBuilder = new TreeBuilder(self::REPOSITORIES_NODE);
+        $repositoriesNode = $this->getRootNode($treeBuilder, self::REPOSITORIES_NODE);
 
         $beginsWithAt = function ($v) {
             return \strpos($v, '@') === 0;
@@ -179,5 +180,20 @@ final class Configuration implements ConfigurationInterface
                     ->append($repositoriesNode)
                 ->end()
             ->end();
+    }
+
+    /**
+     * Gets the root node of a TreeBuilder with the appropriate way.
+     *
+     * @param TreeBuilder $treeBuilder
+     * @param string $rootName
+     *
+     * @return ArrayNodeDefinition
+     */
+    private function getRootNode(TreeBuilder $treeBuilder, string $rootName): ArrayNodeDefinition
+    {
+        return \method_exists($treeBuilder, 'getRootNode')
+            ? $treeBuilder->getRootNode()
+            : $treeBuilder->root($rootName);
     }
 }
